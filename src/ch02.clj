@@ -51,3 +51,74 @@
 ;; 인자나 let으로 정의한 로컬 이름 등을 위한 고유한 심벌이 필요 할 때 
 ;; 사용한다고 하는데 아직 잘 모르겠다.
 `potion#
+
+;; 호스트 라이브러리 사용
+java.util.Locale/JAPAN
+
+(Math/sqrt 9)
+
+;; 인스턴스 생성
+;; new 로 생성하기 보다는
+(new java.awt.Point 0 1)
+(new java.util.HashMap {"foo" 42 "bar" 9 "baz" "quux"})
+
+;; 이렇게 생성하는 것을 선호
+(java.util.HashMap. {"foo" 42 "bar" 9 "baz" "quux"})
+
+;; 인스턴스 맴버 접근
+(.-x (java.awt.Point. 10 20))
+
+(.divide (java.math.BigDecimal. "42") 2M)
+
+;; 인스턴스 필드 세팅
+(let [origin (java.awt.Point. 0 0)]
+  (set! (.-x origin) 15)
+  (str origin))
+
+;; .. 매크로
+;; new java.util.Date().toString().endsWith("2024")
+(.endsWith (.toString (java.util.Date.)) "2024")
+
+;; .. 예시
+;; ->, ->> 를 선호 한다.
+(.. (java.util.Date.) toString (endsWith "2024"))
+
+;; doto 매크로
+(doto (java.util.HashMap.)
+  (.put "Home" "/home/me")
+  (.put "SRC" "src")
+  (.put "BIN" "classes"))
+
+;; 예외 처리
+(throw (Exception. "I done throwed"))
+
+(defn throw-catch [f]
+  [(try
+     (f)
+     (catch ArithmeticException e "No dividing by zero!")
+     (catch Exception e (str "You are so bad " (.getMessage e)))
+     (finally (println "returning...")))])
+
+(throw-catch #(/ 10 5))
+
+(throw-catch #(/ 10 0))
+(throw-catch #(throw (Exception. "Crybaby")))
+
+;; 네임 스페이스
+;; (ns joy.ch2)
+
+(defn hello []
+  (println "Hello Cleveland!"))
+
+(defn report-ns []
+  (str "The current namespace is " *ns*))
+
+(report-ns)
+
+hello
+
+;; 아무 때나 새 네임 스페이스 생성 가능
+;; (ns joy.another)
+
+;; 해당 네임스페이스에느 없기 때문에 동작하지 않는다.
+;; (report-ns)
