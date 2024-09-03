@@ -161,3 +161,7 @@ evil-false ;; => false
   (doseq [[x y v] (f-values f xs ys)]
     (.setColor gfx (java.awt.Color. v v v))
     (.fillRect gfx x y 1 1)))
+
+(draw-values bit-and 256 256)
+(draw-values + 256 256)
+(draw-values * 256 256)
