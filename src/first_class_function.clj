@@ -53,7 +53,33 @@
 ;; (comp not even?), #(not (even? %)) 과 같은 의미
 ((complement even?) 2)
 
+;; defn 메타데이터의 형태
+;; 모두 같은 의미 이다.
+(comment
+  (defn ^:private ^:dynamic sum [nums]
+    (map + nums))
+
+  (defn ^{:private true :dynamic true} sum [nums]
+    (map + nums))
+
+  (defn sum {:private true :dynamic true} [nums]
+    (map + nums))
+
+  (defn sum
+    ([nums]
+     (map + nums))
+    {:private true :dynamic true}))
+
 ;; 함수를 데이터로 사용하기
+;; 메타 데이터 사용
+(defn join
+  {:test (fn []
+           (assert
+            (= (join "," [1 2 3]) "1,3,3")))}
+  [sep s]
+  (apply str (interpose sep s)))
 
-
-
+(use '[clojure.test :as t])
+;; 위에서 생성한 join 함수에 :test가 정의되어 있고,
+;; 그것이 run-tests 함수에 의해 실행 되었다.
+(t/run-tests)
