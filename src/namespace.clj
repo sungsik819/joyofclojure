@@ -93,6 +93,9 @@ bonobo/x
 (answer)
 
 ;; 선언적 포함과 배제
-
-
-
+(ns joy.ns-ex
+  (:refer-clojure :exclude [defstruct]) ;; defstruct 제외
+  (:refer [clojure.test :only (are is)]) ;; are, is만 사용
+  (:require (clojure [zip :as z])) ;; z라는 별칭으로 사용
+  (:import (java.util Date) ;; Date 사용
+           (java.io File))) ;; File 사용
