@@ -54,13 +54,23 @@
 
 (derive (make-hierarchy) ::osx ::unix)
 
+;; 임의적 디스패치의 진정한 힘
+;; 입력 값을 분리하거나 결합한 형태에 디스패치 하는 것도 가능
+;; compile-cmd는 os, compiler의 결과가 일치해야 분기 한다.
+(defmulti compile-cmd (juxt :os compiler))
 
+(defmethod compile-cmd [::osx "clang"] [m]
+  (str "/usr/bin/" (get m :c-compiler)))
 
+(defmethod compile-cmd :default [m]
+  (str "Unsure where to locate " (get m :c-compiler)))
 
+(compile-cmd osx)
 
+(compile-cmd unix)
 
-
-
-
-
-
+;; juxt 함수
+;; 여러 함수를 받고 각 함수들에 인자를 적용한 결과를 백터로 전달 한다.
+(def each-math (juxt + * - /))
+(each-math 2 3)
+((juxt take drop) 3 (range 9))
