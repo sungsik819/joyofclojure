@@ -153,6 +153,7 @@
 (def-watched x (* 12 12))
 
 ;; 매크로 사용하여 구문 변경
+;; 클로저 격언 : 클로저는 그 개념적 모델 또한 클로저로 구성된 설계 언어다.
 ;; 매크로를 설계하는 한가지 방법은 원하는 동작에 대한 예제 코드를 작성
 ;; 동작시킬 구체적인 애플리케이션 도메인과 사양에 가깝게 작성 되어야 한다.
 ;; 그리고 나서 세부 동작을 채우기 위한 매크로와 함수를 작성하면 된다.
@@ -256,3 +257,179 @@
 ;; 도메인에 대한 전체적인 구조는 하나의 매크로를 사용하여 기술
 ;; 세부 역할들은 구분한다.
 ;; 매크로는 항상 데이터를 받아서 데이터를 리턴 한다.
+
+;; 매크로로 심벌릭 레졸루션 타임 제어하기
+;; 함수는 런 타임에 값을 받아서 애플리케이션이 필요하는 값을 리턴
+;; 매크로는 컴파일 타임에 코드를 받아서 필요한 코드를 리턴
+;; 심벌 식별 여부, 레졸루션 타임, 렉시컬 컨텍스트에 따라서 미묘한 차이가 있음
+;; 네임 캡처 - 매크로 시스템에서 컴파일 타임에 생성된 이름이 런 타임에 존재하는 
+;; 이름과 충돌할 수 있는 잠재적 문제
+
+;; 클로저 매크로는 문법 인용의 사용으로 인해 매크로 익스팬션 타임에 심벌들을 식별하여
+;; 네임 캡처 문제가 발생하지 않는다.
+
+(defmacro resolution [] `x)
+
+(macroexpand '(resolution)) ;; => #'macro/x
+
+;; 아래 코드는 x가 문법 인용이 적용된 코드 이므로 9가 출력 된다.
+(def x 9)
+(let [x 109] (resolution))
+
+;; 대용
+;; 대명사와 같은 뜻, 어떤 것을 대체 한다.
+(defmacro awhen [expr & body]
+  `(let [~'it ~expr] ;; 대용어 정의
+     (if ~'it ;; 참인지 확인
+       (do ~@body)))) ;; body 인라인 평가
+
+;; ([1 2 3] 2)과 같은 동작
+;; (clojure.core/let [it [1 2 3]] (if it (do (it 2))))
+;; it 사용
+(awhen [1 2 3] (it 2))
+
+(awhen nil (println "Will never get here"))
+
+(awhen 1 (awhen 2 [it]))
+
+;; 중첩 실패
+(macroexpand-1 '(awhen 1 (awhen 2 [it])))
+
+;; 중첩이 가능하면서도 대용어의 필요를 대체 할 수 있는
+;; if-let, when-let 매크로 제공
+
+;; 선택적 네임 캡처
+;; 하이제닉
+;; 클로저 매크로 안에서의 이름을 선택적으로 캡처하고 싶다면 ~' 패턴을 사용하여 명시 한다.
+
+;; 매크로로 리소스 관리 하기
+;; with-open 매크로는 자동적으로 finally 블록에서 .close를 호출 해준다.
+(import [java.io BufferedReader InputStreamReader]
+        [java.net URL])
+
+;; 닫은 후에 io 시도
+(defn joc-www []
+  (-> "https://joyofclojure.github.io/" URL.
+      .openStream
+      InputStreamReader.
+      BufferedReader.))
+
+(let [stream (joc-www)]
+  (with-open [page stream] ;; io 블록 시작
+    (println (.readLine page))
+    (print "The stream will now close... ")) ;; 암묵적으로 io를 닫음
+  (println "but let's read from it anyway.")
+  (.readLine stream)) ;; 리소스 해제 후의 부적절한 io 시도
+
+;; 모든 리소스의 인스턴스를 닫을 수 있는 것은 아니다.
+;; 아래 예제는 리소스 할당을 위한 매크로
+(defmacro with-resource [binding close-fn & body]
+  `(let ~binding
+     (try
+       (do ~@body)
+       (finally
+         (~close-fn ~(binding 0))))))
+
+(let [stream (joc-www)]
+  (with-resource [page stream]
+    #(.close %)
+    (.readLine page)))
+
+;; 함수를 리턴하는 매크로
+;; 클로저 격언 : 클로저 프로그래머는 클로저로 애플리케이션을 작성하는 것이 아니라,
+;; 클로저로 애플리케이션을 작성하는 데 사용되는 언어를 작성하는 것이다.
+
+;; contract 매크로
+;; 함수의 제약 조건을 기술하는 간단한 DSL
+;; 1. 이름을 부여 할 수 있어야 한다.
+;; 2. 선행/후행 조건을 직관적인 방법으로 기술할 수 있어야 한다.
+;; 3. 추후 제약 조건의 추가 적용을 위해 고차 함수로 구성되어야 한다.
+
+;; contract에 대한 구조 만들기
+;; 오직 양수만 받아서 2를 곱한 값을 리턴하는 함수에 대한 제약 조건
+(contract doubler
+          [x]
+          (:require
+           (pos? x))
+          (:ensure
+           (= (* 2 x) %)))
+
+;; 최상위 레벨 매크로 contract
+(declare collect-bodies)
+
+(defmacro contract [name & forms]
+  (list* `fn name (collect-bodies forms)))
+
+;; contract가 리턴할 함수의 형태
+;; (fn doubler
+;;   ([f x]
+;;    {:post [(= (* 2 x) %)]
+;;     :pre [(pos? x)]}
+;;    (f x)))
+
+;; 여러개의 인자를 받을수 있는 함수 정의 구문을 허용 해야 한다.
+;; 함수마다 하나 이상의 제약 조건들을 심벌 벡터로 구분하여 입력 받을수 있도록 해야 한다.
+;; 우선은 collect-bodies를 구현
+;; 주된 작업은 세 개 단위로 분할되어 있는 contract 몸체의 리스트를 구성 하는 것이다.
+;; 분할된 각 요소들은 인자 목록과 contract의 require, ensures를 표현 한다.
+
+(declare build-contract)
+
+(defn collect-bodies [forms]
+  (for [form (partition 3 forms)]
+    (build-contract form)))
+
+;; contract의 보조 함수 build-contract
+(defn build-contract [c]
+  (let [args (first c)]
+    (list
+     (into '[f] args)
+     (apply merge
+            (for [con (rest c)]
+              (cond (= (first con) 'require)
+                    (assoc {} :pre (vec (rest con)))
+                    (= (first con) 'ensure)
+                    (assoc {} :post (vec (rest con)))
+                    :else (throw (Exception.
+                                  (str "Unknown tag "
+                                       (first con)))))))
+     (list* 'f args))))
+
+;; contract 함수와 제약 조건 함수 구성
+(def doubler-contract ;; contract 정의
+  (contract doubler
+            [x]
+            (require
+             (pos? x))
+            (ensure
+             (= (* 2 x) %))))
+
+;; 올바른 사용 테스트
+(def times2 (partial doubler-contract #(* 2 %)))
+(times2 9)
+
+;; 잘못된 사용 테스트 - 정의된 contract를 만족사지 못한다.
+;; Assert failed: (= (* 2 x) %)
+(def times3 (partial doubler-contract #(* 3 %)))
+(times3 9)
+
+;; 여러개의 인자를 받는 함수를 위한 contract
+(def doubler-contract2
+  (contract doubler
+            [x]
+            (require
+             (pos? x))
+            (ensure
+             (= (* 2 x) %))
+            [x y]
+            (require
+             (pos? x)
+             (pos? y))
+            (ensure
+             (= (* 2 (+ x y)) %))))
+
+((partial doubler-contract2 #(* 2 (+ %1 %2))) 2 3)
+((partial doubler-contract2 #(+ %1 %1 %2 %2)) 2 3)
+((partial doubler-contract2 #(* 3 (+ %1 %2))) 2 3)
+
+;; 매크로 사용은 가능한 최소한으로 한다.
