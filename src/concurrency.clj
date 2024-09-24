@@ -1,6 +1,6 @@
 (ns concurrency
-  (:import java.util.concurrent.Executors)
-  (:require [a-star :refer [neighbors]]))
+  (:require [utils :refer [neighbors]]
+            [thread-util :refer [dothreads!]]))
 
 ;; 동시성은 설계 자체에만 관심 있다.
 ;; 클로저 격언 : 가변성이 복잡하게 얽혀있다는 것은 코드를 조금만 변경해도 일이 커질 수 있다는 것을 의미한다.
@@ -37,20 +37,6 @@
 ;; dosync 구문으로 표시되는 트랜잭션은 가변적 데이터 셀의 집합을 구성하는데 사용된다.
 ;; 데이터 셀은 한꺼번에 변경 되거나, 실패하면 모두 변경되지 않는다.
 ;; db의 트랜잭션과 유사하다.
-
-;; dothreads 함수 예제
-;; cpu 개수보다 2개 많은 스레드 풀 생성
-(def thread-pool
-  (Executors/newFixedThreadPool
-   (+ 2 (.availableProcessors (Runtime/getRuntime)))))
-
-(defn dothreads!
-  [f & {thread-count :threads
-        exec-count :times
-        :or {thread-count 1 exec-count 1}}]
-  (dotimes [t thread-count]
-    (.submit thread-pool
-             #(dotimes [_ exec-count] (f)))))
 
 (dothreads! #(.print System/out "Hi ") :threads 2 :times 2)
 

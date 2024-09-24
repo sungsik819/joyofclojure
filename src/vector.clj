@@ -1,4 +1,5 @@
-(ns vector)
+(ns vector
+  (:require [utils :refer [neighbors]]))
 
 ;; 만들기
 ;; 다른 종류의 컬렉션에서 백터로
@@ -55,17 +56,6 @@ a-to-j
 
 ;; 내부에 apply 함수로 동작 한다.
 (update-in matrix [1 2] * 100)
-
-;; 2차원 행렬의 특정 좌표에 대한 이웃을 찾는 함수
-(defn neighbors
-  ([size yx] (neighbors [[-1 0] [1 0] [0 -1] [0 1]]
-                        size
-                        yx))
-  ([deltas size yx]
-   (filter (fn [new-yx]
-             (every? #(< -1 % size) new-yx))
-           (map #(vec (map + yx %))
-                deltas))))
 
 (neighbors 3 [0 0])
 

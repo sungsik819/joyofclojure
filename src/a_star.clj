@@ -1,15 +1,5 @@
-(ns a-star)
-
-;; 5장에서 사용한 함수
-(defn neighbors
-  ([size yx] (neighbors [[-1 0] [1 0] [0 -1] [0 1]]
-                        size
-                        yx))
-  ([deltas size yx]
-   (filter (fn [new-yx]
-             (every? #(< -1 % size) new-yx))
-           (map #(vec (map + yx %))
-                deltas))))
+(ns a-star
+  (:require [utils :refer [neighbors]]))
 
 (def world [[1   1   1   1   1]
             [999 999 999 999 1]
