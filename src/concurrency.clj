@@ -239,6 +239,58 @@
   (commute to-move #(vector (second %) move)))
 
 ;; update-to-move 함수 수정 후 실행하면 불일치 발생 함
+;; update-to-move 함수가 commute 방식과 맞지 않기 때문
+;; commute는 트랜잭션 내부 값이 다른 트랜잭션의 커밋과 다르더라도
+;; 이를 무시하는 방식으로 STM의 동시성을 지원 한다.
+;; 즉, 재시도를 하지 않는다.
 (dothreads! make-move-v2 :threads 100 :times 100)
 (board-map #(dosync (deref %)) board)
 @to-move
+
+;; 다음과 같은 상황이 발생하지 않으면 commute가 유용 하다.
+;; 트랜잭션 내부의 값이 커밋 시점에 커밋한 값과 다를 가능성이 있다.
+;; commute할 함수가 최소 두번 실행 된다. 한번은 트랜잭션 내부 값의 계산
+;; 다른 한번은 커밋할 값 계산을 위해 실행되고 몇 번 더 실행 될 수도 있다.
+
+;; ref-set을 사용한 변경
+;; alter나 commute는 값이 아닌 ref를 변경하는데 
+;; ref-set은 값 자체를 변경 한다.
+;; 이런 방식의 변경은 피한다.
+;; 필요할 때는 commute를 사용하면서 ref의 동기화에 문제가 발생하는 경우
+;; 이를 바로 잡아야 하는 때 밖에 없다.
+(dosync (ref-set to-move '[[:K [2 1]] [:k [0 1]]]))
+
+;; ensure로 쓰기 왜곡 바로 잡기 P.299 읽어보기
+
+;; ref에 스트레스 주기
+;; 느린 트랜잭션과 빠른 트랜잭션이 같은 ref를 사용하지 않도록 하는 것이 최선이다.
+;; 보통은 클로저의 STM이 이 문제를 어느정도 해소시켜 주지만
+;; 위 경험적 규칙을 무시하면 결코 이상적이지 않은 결과를 곧 만나게 될 것이다.
+
+;; 위 문제 재현
+;; ref를 과하게 사용하도록 설계한 stress-ref
+(defn stress-ref [r]
+  (let [slow-tries (atom 0)]
+    (future
+      (dosync
+       (swap! slow-tries inc)
+       (Thread/sleep 200) ;; 길게 실행되는 트랜잭션
+       @r)
+      (println (format "r is: %s, history %d, after %d tries"
+                       @r (ref-history-count r) @slow-tries)))
+    (dotimes [i 500]
+      (Thread/sleep 10) ;; 500개의 빠른 트랜잭션
+      (dosync (alter r inc)))
+    :done))
+
+;; 실행하게 되면 느린 트랜잭션은 메인 스레드가 정신 없이 반복되고 :done을 출력하기 전에는
+;; 성공적으로 커밋 할 수 없다.
+(stress-ref (ref 0))
+
+;; 이를 피할 수 없는 상황이라면 기록 할 수 있는 크기를 좀 더 늘린다.
+;; r이 500번 실행되기 전에 느린 트랜잭션이 종료 되었다.
+(stress-ref (ref 0 :max-history 30))
+
+;; min-history 크기를 늘려보자
+;; r이 50번이 되었을때 느린 트랜잭션이 종료 되었다.
+(stress-ref (ref 0 :min-history 15 :max-history 30))
