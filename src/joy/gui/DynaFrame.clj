@@ -21,6 +21,9 @@
 ;; edn 파일에서 path에 class가 생성될 path를 추가 해준다.
 ;; path에 추가한 폴더를 생성 해준다.
 
+;; 여기서는 gen-class와 :impl-ns가 동일 하다는 것을 전제 한다.
+;; 분리하면 필요하지 않은 파일이 컴파일 되는 것을 예방 할 수 있다.
+
 (defn df-init [title]
   [[title] (atom {::title title})])
 
