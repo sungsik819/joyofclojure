@@ -1,4 +1,5 @@
-(ns data)
+(ns data
+  (:require [joy.unit :refer [convert]]))
 
 ;; 데이터 지향 프로그래밍
 (rand-int 1024)
@@ -25,19 +26,6 @@
 #inst "2024-10-02"
 
 ;; 소스 코드 리터럴을 태그 데이터로 정의하기
-
-(ns joy.unit)
-
-(defn convert [context descriptor]
-  (reduce (fn [result [mag unit]]
-            (+ result
-               (let [val (get context unit)]
-                 (if (vector? val)
-                   (* mag (convert context val))
-                   (* mag val)))))
-          0
-          (partition 2 descriptor)))
-
 (def distance-reader
   (partial convert
            {:m 1
