@@ -19,6 +19,11 @@
 (def T {'unit/time #'joy.unit/time-reader})
 (edn/read-string {:readers T} "#unit/time [1 :min 30 :sec]")
 
+;; 기본 리더 함수 지정
+(edn/read-string {:readers T :default vector} "#what/the :huh?")
+
+
+
 
 
 
