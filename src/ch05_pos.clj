@@ -19,7 +19,7 @@
 
 (pos \3 ":a 1 :b 2 :c 3 :d 4")
 
-;; 위 pos 처럼 명시적으로 컬렉션을 지정하지 말고, 
+;; 위 pos 처럼 명시적으로 컬렉션을 지정하지 말고,
 ;; [[index value]...]처럼 쌍들의 시퀀스로 생각해 보자
 (defn index [coll]
   (cond
@@ -35,8 +35,8 @@
 (seq {:a 1 :b 2}) ;; => ([:a 1] [:b 2])
 
 ;; index를 사용하여 pos 구현
-(defn pos2 [e coll]
-  (for [[i v] (index coll) :when (= e v)] i))
+(defn pos2 [pred coll]
+  (for [[i v] (index coll) :when (pred v)] i))
 
 (pos2 3 [:a 1 :b 2 :c 3 :d 4])
 (pos2 3 {:a 1 :b 2 :c 3 :d 4})

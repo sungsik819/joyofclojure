@@ -1,4 +1,4 @@
-{:paths ["src" "classes" "src/ch14" "src/ch15"]
+{:paths ["src" "classes" "src/ch14" "src/ch15" "src/ch16"]
  :deps {org.clojure/clojure {:mvn/version "1.11.4"}
         org.clojure/clojurescript {:mvn/version "1.11.54"}
         criterium/criterium {:mvn/version "0.4.6"}}}
