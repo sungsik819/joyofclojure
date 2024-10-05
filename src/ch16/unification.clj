@@ -107,3 +107,13 @@
 ;; 치환 - subst의 기능
 ;; 두 구조의 혼합 - meld 기능
 
+(defn meld [term1 term2]
+  (->> {}
+       (satisfy term1 term2)
+       (subst term1)))
+
+(meld '(1 ?x 3) '(1 2 ?y))
+
+(meld '(1 ?x) '(?y (?y 2)))
+
+;; 복잡한 상황에 대한 문제는 아직 있다.
