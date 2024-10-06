@@ -24,5 +24,3 @@
              [(logic/== george :born)]
              [(logic/== george :unborn)]))
 
-
-;; 관계
