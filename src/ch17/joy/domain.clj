@@ -1,4 +1,4 @@
-(ns domain
+(ns joy.domain
   (:require [clojure.set :as ra]
             [clojure.string :as str :only []]))
 
