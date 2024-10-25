@@ -95,6 +95,18 @@ cons
 (eval `(let [number# 1]
          (+ number# 2)))
 
+;; 인용, 비인용을 같이 적용하면 어떤 의미 일까?
+(defmacro define-quote-unquote [name]
+  `(str '~name))
+
+;; 확실한 건 밑의 코드가 실행된다는 것이다.
+;; str로 설정하지 않고, 이름만 넣었는데 실행이 된다.
+(define-quote-unquote group-name) ;; => "group-name"
+
+;; def를 정의 한 후에 실행해도 group-name으로 설정 된다.
+(def group-name "group-str")
+(define-quote-unquote group-name) ;; => "group-name"
+
 ;; 호스트 라이브러리 사용
 java.util.Locale/JAPAN
 
