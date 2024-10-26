@@ -1,4 +1,4 @@
-(ns ch03.joy.truthiness)
+(ns joy.truthiness)
 
 ;; 참
 ;; nil과 false를 제외하면 모든 것은 참이다.

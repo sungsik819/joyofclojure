@@ -1,4 +1,4 @@
-(ns ch03.joy.destructuring)
+(ns joy.destructuring)
 
 ;; 구조분해
 ;; 구조분해 사용하기 전 코드

@@ -1,4 +1,4 @@
-(ns ch03.joy.nil)
+(ns joy.nil)
 
 ;; nil 과 false 비교
 (when (nil? nil) "Actually nil, not false")

@@ -1,4 +1,4 @@
-(ns ch03.joy.repl)
+(ns joy.repl)
 
 ;; repl
 (range 5)
